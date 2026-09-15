@@ -2,7 +2,7 @@
 export function createDroneScore(ctx, random = Math.random) {
   const input = ctx.createGain();
   const cabin = ctx.createBiquadFilter();
-  cabin.type = 'lowpass'; cabin.frequency.value = 780; cabin.Q.value = .45;
+  cabin.type = 'lowpass'; cabin.frequency.value = 520; cabin.Q.value = .45;
   const lowCut = ctx.createBiquadFilter();
   lowCut.type = 'highpass'; lowCut.frequency.value = 48;
   input.connect(cabin).connect(lowCut);
@@ -15,9 +15,9 @@ export function createDroneScore(ctx, random = Math.random) {
   for (const [seconds, panValue] of [[.86, -.82], [1.29, .82]]) {
     const delay = ctx.createDelay(2); delay.delayTime.value = seconds;
     const damp = ctx.createBiquadFilter();
-    damp.type = 'lowpass'; damp.frequency.value = 610; damp.Q.value = .4;
+    damp.type = 'lowpass'; damp.frequency.value = 420; damp.Q.value = .4;
     const feedback = ctx.createGain(); feedback.gain.value = .60;
-    const wet = ctx.createGain(); wet.gain.value = .54;
+    const wet = ctx.createGain(); wet.gain.value = 1.08;
     const pan = ctx.createStereoPanner(); pan.pan.value = panValue;
     lowCut.connect(delay); delay.connect(damp);
     damp.connect(feedback).connect(delay);
@@ -38,8 +38,10 @@ export function createDroneScore(ctx, random = Math.random) {
     }
   }
   reverb.buffer = impulse;
-  const room = ctx.createGain(); room.gain.value = .68;
-  lowCut.connect(reverb); echoBus.connect(reverb);
+  const room = ctx.createGain(); room.gain.value = 1.36;
+  // Keep the reverb input steady while doubling both wet returns.
+  const echoToRoom = ctx.createGain(); echoToRoom.gain.value = .5;
+  lowCut.connect(reverb); echoBus.connect(echoToRoom).connect(reverb);
   reverb.connect(room).connect(mix);
   const limiter = ctx.createDynamicsCompressor();
   limiter.threshold.value = -19; limiter.knee.value = 16;
@@ -92,7 +94,7 @@ export function createDroneScore(ctx, random = Math.random) {
       const now = ctx.currentTime;
       if (enabled !== active) {
         active = enabled;
-        master.gain.setTargetAtTime(active ? .9 : 0, now, active ? 1.8 : .18);
+        master.gain.setTargetAtTime(active ? .45 : 0, now, active ? 1.8 : .18);
         if (active && nextNote < now) nextNote = now + .08;
       }
       // No backlog after a suspended tab; at most one new voice per update.
