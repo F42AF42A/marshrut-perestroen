@@ -76,14 +76,14 @@ function createTyreTracks(scene){
  const mesh=new T.Mesh(geometry,material);mesh.name='Faint rear tyre tracks';mesh.frustumCulled=false;scene.add(mesh);
  const previous=[null,null],point=new T.Vector3();let cursor=0;
  return {reset(){ages.fill(99);opacity.fill(0);previous.fill(null);cursor=0;geometry.attributes.opacity.needsUpdate=true;},update(dt,delta,car,active){
-  for(let i=0;i<count;i++){ages[i]+=dt;for(let v=0;v<6;v++){positions[i*18+v*3+2]+=delta;opacity[i*6+v]=Math.max(0,1-ages[i]/2.4)*.10;}}
+  for(let i=0;i<count;i++){ages[i]+=dt;for(let v=0;v<6;v++){positions[i*18+v*3+2]+=delta;opacity[i*6+v]=Math.max(0,1-ages[i]/2.4)*.025;}}
   for(const p of previous)if(p)p.z+=delta;
   if(active&&delta>0){car.updateMatrixWorld(true);for(let side=0;side<2;side++){
    point.set((side?1:-1)*.886,.014,1.4);car.localToWorld(point);point.y=.014;
    const old=previous[side];if(old&&old.distanceTo(point)<3){
-    const i=cursor++%count;ages[i]=0;const wx=Math.cos(car.rotation.y)*.085,wz=-Math.sin(car.rotation.y)*.085;
+    const i=cursor++%count;ages[i]=0;const wx=Math.cos(car.rotation.y)*.11,wz=-Math.sin(car.rotation.y)*.11;
     const corners=[[old.x-wx,old.z-wz],[old.x+wx,old.z+wz],[point.x-wx,point.z-wz],[point.x+wx,point.z+wz]],order=[0,1,2,2,1,3];
-    for(let v=0;v<6;v++){const c=order[v];positions.set([corners[c][0],.014,corners[c][1]],i*18+v*3);uv.set([c%2,c<2?0:1],i*12+v*2);opacity[i*6+v]=.10;}
+    for(let v=0;v<6;v++){const c=order[v];positions.set([corners[c][0],.014,corners[c][1]],i*18+v*3);uv.set([c%2,c<2?0:1],i*12+v*2);opacity[i*6+v]=.025;}
    }previous[side]=point.clone();
   }}else previous.fill(null);
   for(const name of ['position','opacity','uv'])geometry.attributes[name].needsUpdate=true;
