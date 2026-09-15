@@ -68,7 +68,7 @@ export function createVapor(scene){
 }
 
 // One setting controls the faintness and colour of both tyre and hoof prints.
-export const SNOW_TRACK_STYLE={opacity:.025,tint:"#85918f"};
+export const SNOW_TRACK_STYLE={opacity:.05,tint:"#85918f"};
 // Faint compressed snow stays on the scrolling road.
 function createTyreTracks(scene){
  const count=320,positions=new Float32Array(count*18),opacity=new Float32Array(count*6),uv=new Float32Array(count*12),ages=new Float32Array(count).fill(99);
