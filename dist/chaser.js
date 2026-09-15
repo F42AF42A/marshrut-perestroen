@@ -40,12 +40,18 @@ export function createChaser(){
   rounded(.195,.106,.018,.03,glass,s*.99,1.12,-.67);
  }
  // Five-spoke silver wheels, dark brake discs and a polished outer lip.
+ car.userData.wheels=[];
  for(const s of [-1,1])for(const z of [-1.39,1.4]){
+  const startIndex=car.children.length;
   const tyre=add(new T.CylinderGeometry(.389,.389,.215,40),rubber,s*.886,.4,z);tyre.rotation.z=Math.PI/2;
   const disk=add(new T.CylinderGeometry(.268,.268,.225,32),black,s*.89,.4,z);disk.rotation.z=Math.PI/2;
   const ring=add(new T.TorusGeometry(.268,.019,8,40),silver,s*1.012,.4,z);ring.rotation.y=Math.PI/2;
   for(let i=0;i<5;i++){const a=i*Math.PI*2/5;const spoke=box(.018,.22,.044,silver,s*1.015,.4+Math.cos(a)*.145,z+Math.sin(a)*.145);spoke.rotation.x=a;}
   const hub=add(new T.CylinderGeometry(.069,.069,.24,20),silver,s*.90,.4,z);hub.rotation.z=Math.PI/2;
+  const parts=car.children.slice(startIndex),steeringPivot=new T.Group(),wheel=new T.Group();
+  steeringPivot.position.set(s*.886,.4,z);car.add(steeringPivot);steeringPivot.add(wheel);
+  for(const part of parts){part.position.sub(steeringPivot.position);wheel.add(part);}
+  car.userData.wheels.push({wheel,steeringPivot,front:z<0,radius:.389});
  }
  // Chaser front: slim rectangular lamps, amber outer corners and a narrow grille.
  rounded(1.62,.3,.2,.09,white,0,.57,-2.24);

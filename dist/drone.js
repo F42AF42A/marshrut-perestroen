@@ -7,7 +7,7 @@ export function createDroneScore(ctx, random = Math.random) {
   lowCut.type = 'highpass'; lowCut.frequency.value = 48;
   input.connect(cabin).connect(lowCut);
   const mix = ctx.createGain();
-  const dry = ctx.createGain(); dry.gain.value = .72;
+  const dry = ctx.createGain(); dry.gain.value = .62;
   lowCut.connect(dry).connect(mix);
 
   // Dark, uneven echoes; feedback stays well below unity.
@@ -16,8 +16,8 @@ export function createDroneScore(ctx, random = Math.random) {
     const delay = ctx.createDelay(2); delay.delayTime.value = seconds;
     const damp = ctx.createBiquadFilter();
     damp.type = 'lowpass'; damp.frequency.value = 610; damp.Q.value = .4;
-    const feedback = ctx.createGain(); feedback.gain.value = .31;
-    const wet = ctx.createGain(); wet.gain.value = .24;
+    const feedback = ctx.createGain(); feedback.gain.value = .55;
+    const wet = ctx.createGain(); wet.gain.value = .48;
     const pan = ctx.createStereoPanner(); pan.pan.value = panValue;
     lowCut.connect(delay); delay.connect(damp);
     damp.connect(feedback).connect(delay);
@@ -38,7 +38,7 @@ export function createDroneScore(ctx, random = Math.random) {
     }
   }
   reverb.buffer = impulse;
-  const room = ctx.createGain(); room.gain.value = .46;
+  const room = ctx.createGain(); room.gain.value = .32;
   lowCut.connect(reverb); echoBus.connect(reverb);
   reverb.connect(room).connect(mix);
   const limiter = ctx.createDynamicsCompressor();
@@ -55,11 +55,7 @@ export function createDroneScore(ctx, random = Math.random) {
     osc.connect(gain).connect(destination);
     return {osc, gain};
   }
-  // Quiet tonic and fifth persist under the changing upper voice.
-  for (const [ratio, level] of [[1, .047], [1.5, .026], [2, .016]]) {
-    const voice = oscillator(root * ratio, 'sine', level, input);
-    voice.osc.start();
-  }
+  // No continuous bed: each phrase ends before the next begins.
   let nextNote = 0, previous = 2, active = false;
   function phrase(start) {
     // Prefer neighbouring chord tones, with occasional octave movement.
@@ -71,14 +67,15 @@ export function createDroneScore(ctx, random = Math.random) {
     const envelope = ctx.createGain();
     const pan = ctx.createStereoPanner(); pan.pan.value = (random() - .5) * .22;
     envelope.connect(pan).connect(input);
-    const attack = 3.5 + random() * 1.8, duration = 16 + random() * 5;
-    const level = .048 + random() * .018;
+    const attack = .55 + random() * .45, duration = 3.8 + random() * 1.8;
+    const level = .085 + random() * .025;
     envelope.gain.setValueAtTime(0, start);
     envelope.gain.linearRampToValueAtTime(level, start + attack);
-    envelope.gain.linearRampToValueAtTime(level * .7, start + duration * .53);
+    envelope.gain.linearRampToValueAtTime(level * .16, start + duration * .6);
     envelope.gain.linearRampToValueAtTime(0, start + duration);
     const voices = [oscillator(frequency, 'sine', .85, envelope),
-      oscillator(frequency, 'triangle', .15, envelope)];
+      oscillator(frequency, 'triangle', .15, envelope),
+      oscillator(root * 2, 'sine', .18, envelope)];
     let remaining = voices.length;
     for (const {osc, gain} of voices) {
       osc.start(start); osc.stop(start + duration + .05);
@@ -87,7 +84,7 @@ export function createDroneScore(ctx, random = Math.random) {
         if (--remaining === 0) { envelope.disconnect(); pan.disconnect(); }
       };
     }
-    return 8 + random() * 5;
+    return duration + 8 + random() * 4;
   }
   return {
     update(enabled) {
