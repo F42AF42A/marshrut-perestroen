@@ -1,10 +1,54 @@
 import * as T from './three.module.js';
+// Deterministic fern-like ice crystals; generated once and shared by both cars.
+let frostTextures;
+function getFrostTextures(){
+ if(frostTextures)return frostTextures;
+ const size=512,field=new Float32Array(size*size);let seed=481229;
+ const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
+ function line(x,y,xx,yy,strength,width=.8){
+  const steps=Math.max(1,Math.ceil(Math.hypot(xx-x,yy-y)));
+  for(let n=0;n<=steps;n++){const px=x+(xx-x)*n/steps,py=y+(yy-y)*n/steps;
+   for(let j=Math.floor(py-width-1);j<=Math.ceil(py+width+1);j++)for(let i=Math.floor(px-width-1);i<=Math.ceil(px+width+1);i++){
+    if(i<0||j<0||i>=size||j>=size)continue;
+    const a=Math.max(0,1-Math.hypot(i-px,j-py)/(width+1))*strength;
+    field[j*size+i]=Math.max(field[j*size+i],a);
+   }
+  }
+ }
+ for(let fern=0;fern<32;fern++){
+  let x=random()*size,y=random()*size,angle=-Math.PI/2+(random()-.5)*2.7;
+  const length=75+random()*170,curve=(random()-.5)*.018;
+  for(let step=0;step<length;step+=4){
+   const nx=x+Math.cos(angle)*4,ny=y+Math.sin(angle)*4;line(x,y,nx,ny,.9,1);
+   const reach=(1-step/length)*(15+length*.19);
+   for(const side of [-1,1]){
+    const a=angle+side*.7,bx=nx+Math.cos(a)*reach,by=ny+Math.sin(a)*reach;
+    line(nx,ny,bx,by,.68,.65);
+    for(let k=.3;k<.95;k+=.22){const sx=nx+(bx-nx)*k,sy=ny+(by-ny)*k,twig=reach*(1-k)*.34;
+     line(sx,sy,sx+Math.cos(a+side*.48)*twig,sy+Math.sin(a+side*.48)*twig,.46,.45);
+    }
+   }x=nx;y=ny;angle+=curve*4;
+  }
+ }
+ const color=new Uint8Array(size*size*4),height=new Uint8Array(size*size*4);
+ for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+  const i=y*size+x,edge=Math.exp(-Math.min(x,y,size-1-x,size-1-y)/27);
+  const ice=Math.min(1,.23+edge*.36+field[i]*.66+random()*.13);
+  for(let c=0;c<3;c++){color[i*4+c]=Math.round([117,144,146][c]*(1-ice)+[235,241,232][c]*ice);height[i*4+c]=Math.round(ice*255);}
+  color[i*4+3]=height[i*4+3]=255;
+ }
+ const map=new T.DataTexture(color,size,size),bump=new T.DataTexture(height,size,size);
+ for(const texture of [map,bump]){texture.magFilter=T.LinearFilter;texture.minFilter=T.LinearMipmapLinearFilter;texture.generateMipmaps=true;texture.needsUpdate=true;}
+ map.colorSpace=T.SRGBColorSpace;frostTextures={map,bump};return frostTextures;
+}
 // White Chaser-inspired JZX100 silhouette, modelled from the supplied photographs.
 export function createChaser(){
  const car=new T.Group();car.name='White Chaser';
  const material=(color,roughness=.45,metalness=.1)=>new T.MeshStandardMaterial({color,roughness,metalness});
  const white=new T.MeshPhysicalMaterial({color:'#f1f0e8',roughness:.29,metalness:.12,clearcoat:.65,clearcoatRoughness:.2});
- const glass=material('#87979f',.21,.55),rubber=material('#14191e',.95),black=material('#20272b',.7),seam=material('#72838a',.8),silver=material('#c3ced3',.23,.8),lens=material('#a7b9c2',.19,.35);
+ const frost=getFrostTextures();
+ const glass=new T.MeshStandardMaterial({name:'Frozen fern-pattern glass',color:'#ffffff',map:frost.map,bumpMap:frost.bump,bumpScale:.008,roughness:.86,metalness:.04});
+ const rubber=material('#14191e',.95),black=material('#20272b',.7),seam=material('#72838a',.8),silver=material('#c3ced3',.23,.8),lens=material('#a7b9c2',.19,.35);
  const red=new T.MeshStandardMaterial({color:'#721219',emissive:'#b31d1b',emissiveIntensity:.45,roughness:.24});
  const redLamp=new T.MeshStandardMaterial({color:'#be2928',emissive:'#e53422',emissiveIntensity:.6,roughness:.25});
  const amber=material('#bd8444',.25),headlight=new T.MeshStandardMaterial({color:'#e6eef0',emissive:'#c5deed',emissiveIntensity:.25,roughness:.17,metalness:.25});
@@ -12,7 +56,7 @@ export function createChaser(){
  const box=(w,h,d,m,x,y,z)=>add(new T.BoxGeometry(w,h,d),m,x,y,z);
  function rounded(w,h,d,r,m,x,y,z){const sh=new T.Shape(),a=-w/2,b=-h/2;sh.moveTo(a+r,b);sh.lineTo(a+w-r,b);sh.quadraticCurveTo(a+w,b,a+w,b+r);sh.lineTo(a+w,b+h-r);sh.quadraticCurveTo(a+w,b+h,a+w-r,b+h);sh.lineTo(a+r,b+h);sh.quadraticCurveTo(a,b+h,a,b+h-r);sh.lineTo(a,b+r);sh.quadraticCurveTo(a,b,a+r,b);const g=new T.ExtrudeGeometry(sh,{depth:d,bevelEnabled:true,bevelSegments:2,steps:1,bevelSize:.008,bevelThickness:.008,curveSegments:6});g.translate(0,0,-d/2);return add(g,m,x,y,z);}
  function line(points,m,r=.01){const curve=new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p)));return add(new T.TubeGeometry(curve,Math.max(8,points.length*5),r,6,false),m);}
- function panel(vertices,m){const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(vertices.flat(),3));g.setIndex([0,1,2,0,2,3]);g.computeVertexNormals();const o=add(g,m);o.material=m.clone();o.material.side=T.DoubleSide;return o;}
+ function panel(vertices,m){const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(vertices.flat(),3));g.setIndex([0,1,2,0,2,3]);g.setAttribute('uv',new T.Float32BufferAttribute([0,0,1,0,1,1,0,1],2));g.computeVertexNormals();const o=add(g,m);o.material=m.clone();o.material.side=T.DoubleSide;return o;}
  function loft(rings,m){const p=[],ix=[];for(const [z,w,base,top] of rings){const bevel=Math.min(.04,(top-base)*.25);p.push(-w*.94,base,z,-w,base+bevel,z,-w,top-bevel,z,-w*.9,top,z,w*.9,top,z,w,top-bevel,z,w,base+bevel,z,w*.94,base,z);}for(let j=0;j<rings.length-1;j++)for(let k=0;k<8;k++){let a=j*8+k,b=j*8+(k+1)%8;ix.push(a,a+8,b,b,a+8,b+8)}for(let k=1;k<7;k++){ix.push(0,k,k+1);let a=(rings.length-1)*8;ix.push(a,a+k+1,a+k);}const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(p,3));g.setIndex(ix);g.computeVertexNormals();return add(g,m);}
  loft([[-2.35,.73,.73,.88],[-2.22,.84,.77,.98],[-1.7,.89,.8,1.04],[-.92,.91,.81,1.07],[.85,.91,.81,1.08],[1.57,.9,.8,1.05],[2.18,.85,.75,1.02],[2.35,.77,.72,.95]],white);
  // Real openings around the wheels instead of a solid box intersecting the tyres.
