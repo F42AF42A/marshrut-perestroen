@@ -1,6 +1,7 @@
 import * as T from './three.module.js';
-export function deerCrossing(relative,stop=0){
+export function deerCrossing(relative,stop=0,pauses=true){
  const smooth=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);};
+ if(!pauses)return {x:-7+14*smooth((115-relative)/180),walk:relative<115&&relative>-65?1:0};
  if(relative>55)return {x:-7+(7+stop)*smooth((135-relative)/80),walk:relative<135?1:0};
  if(relative>15)return {x:stop,walk:0};
  return {x:stop+(7-stop)*smooth((15-relative)/90),walk:relative>-75?1:0};
