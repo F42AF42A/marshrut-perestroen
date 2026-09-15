@@ -5,45 +5,7 @@ const fur=mat('#786c5c'),chest=mat('#a09681'),darkFur=mat('#554f46'),ivory=mat('
 function mesh(g,m,p,x=0,y=0,z=0){const o=new T.Mesh(g,m);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;p.add(o);return o;}
 function ell(p,m,x,y,z,a,b,c){const o=mesh(new T.SphereGeometry(1,16,10),m,p,x,y,z);o.scale.set(a,b,c);return o;}
 function bone(p,m,a,b,r1,r2){const va=new T.Vector3(...a),vb=new T.Vector3(...b),o=mesh(new T.CylinderGeometry(r2,r1,va.distanceTo(vb),9),m,p);o.position.copy(va.clone().add(vb).multiplyScalar(.5));o.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),vb.sub(va).normalize());return o;}
-export function createDeer(){
- const g=new T.Group();g.name='Deer';
- ell(g,fur,-.04,1.14,0,.77,.34,.29);ell(g,darkFur,.42,1.19,0,.32,.40,.30);
- ell(g,chest,-.10,.97,0,.51,.17,.245);ell(g,fur,-.58,1.17,0,.30,.33,.30);
- ell(g,ivory,-.77,1.14,0,.07,.23,.21);
- bone(g,fur,[.45,1.19,0],[.75,1.91,0],.25,.135);
- ell(g,chest,.64,1.48,-.01,.19,.40,.16);
- const head=ell(g,fur,.86,1.97,0,.25,.18,.155);head.rotation.z=-.14;
- const muzzle=ell(g,chest,1.08,1.89,0,.245,.11,.115);muzzle.rotation.z=-.12;
- ell(g,hoof,1.29,1.866,0,.055,.063,.09);
- for(const s of [-1,1]){
-  ell(g,eye,.931,2.018,s*.14,.032,.032,.013);
-  ell(g,ivory,.92,2.044,s*.138,.06,.013,.015);
-  const ear=ell(g,fur,.697,2.15,s*.206,.083,.21,.077);ear.rotation.x=s*.73;ear.rotation.z=.25;
-  const inner=ell(g,chest,.72,2.16,s*.228,.045,.14,.041);inner.rotation.x=s*.73;
-  // Sweeping main beams with asymmetrical forward and upper tines.
-  const nodes=[[.73,2.12,s*.095],[.61,2.40,s*.18],[.49,2.66,s*.31],[.35,2.91,s*.40],[.37,3.14,s*.42]];
-  for(let i=0;i<nodes.length-1;i++)bone(g,ivory,nodes[i],nodes[i+1],.037-i*.007,.029-i*.007);
-  bone(g,ivory,nodes[1],[.91,2.52,s*.22],.021,.005);
-  bone(g,ivory,nodes[2],[.79,2.86,s*.36],.022,.005);
-  bone(g,ivory,[.66,2.79,s*.34],[.68,3.08,s*.35],.011,.002);
-  bone(g,ivory,nodes[3],[.12,3.06,s*.54],.016,.003);
-  bone(g,ivory,[.49,2.65,s*.31],[.34,2.82,s*.62],.017,.004);
- }
- const tail=ell(g,fur,-.84,1.36,0,.17,.085,.09);tail.rotation.z=-.55;
- const legs=[];
- for(const x of [-.53,.46])for(const s of [-1,1]){
-  const leg=new T.Group();leg.position.set(x,1.13,s*.19);g.add(leg);legs.push(leg);
-  const back=x<0,knee=back?.16:-.025;
-  bone(leg,fur,[0,0,0],[knee,-.45,0],back?.115:.084,.047);
-  ell(leg,darkFur,knee,-.45,0,.057,.07,.049);
-  bone(leg,chest,[knee,-.45,0],[-.025,-.99,0],.04,.023);
-  bone(leg,hoof,[-.025,-.97,0],[.015,-1.055,0],.03,.037);
-  ell(leg,hoof,.032,-1.065,0,.087,.05,.05);
-  bone(leg,eye,[.067,-1.07,0],[.113,-1.07,0],.004,.004);
- }
- const mouth=new T.Object3D();mouth.position.set(1.32,1.86,0);g.add(mouth);
- g.userData={legs,mouth};return g;
-}
+export { createDeer } from './deer.js';
 export function createRoadsideEvents(scene){
  const snow=mat('#c9d6da'),ice=mat('#a8bbc3');
  const abandoned=new T.Group();abandoned.name='Abandoned car at 5 km';
