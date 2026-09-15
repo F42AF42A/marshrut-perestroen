@@ -86,8 +86,8 @@ export function createChaser(){
  loft([[1.93,.76,1.16,1.21],[2.04,.81,1.175,1.235],[2.17,.78,1.16,1.205]],white);
  rounded(.51,.027,.025,.008,red,0,1.188,2.18);
  // Large hollow exhaust tip on the vehicle's right (positive X), visible from behind.
- const exhaust=add(new T.CylinderGeometry(.108,.093,.36,32,1,true),silver,.65,.292,2.29);exhaust.rotation.x=Math.PI/2;
- const inside=add(new T.CircleGeometry(.09,32),black,.65,.292,2.456);
- const lip=add(new T.TorusGeometry(.099,.013,8,32),silver,.65,.292,2.474);
+ const exhaust=add(new T.CylinderGeometry(.108,.093,.20,32,1,true),silver,.65,.292,2.25);exhaust.rotation.x=Math.PI/2;
+ const inside=add(new T.CircleGeometry(.09,32),black,.65,.292,2.336);
+ const lip=add(new T.TorusGeometry(.099,.013,8,32),silver,.65,.292,2.354);
  return car;
 }
