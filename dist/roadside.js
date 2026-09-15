@@ -71,24 +71,28 @@ export function createVapor(scene){
 export const SNOW_TRACK_STYLE={opacity:.05,tint:"#85918f"};
 // Faint compressed snow stays on the scrolling road.
 function createTyreTracks(scene){
- const count=320,positions=new Float32Array(count*18),opacity=new Float32Array(count*6),uv=new Float32Array(count*12),ages=new Float32Array(count).fill(99);
+ const tyreSlots=320,count=tyreSlots+160,positions=new Float32Array(count*18),opacity=new Float32Array(count*6),uv=new Float32Array(count*12),ages=new Float32Array(count).fill(99);
  const shapes=new Float32Array(count*6),lifetimes=new Float32Array(count).fill(2.4);
- const deerState=new Map();let hoofCursor=160;
+ const deerState=new Map();let hoofCursor=tyreSlots;
  const geometry=new T.BufferGeometry();
  geometry.setAttribute('shape',new T.BufferAttribute(shapes,1));geometry.setAttribute('position',new T.BufferAttribute(positions,3));geometry.setAttribute('opacity',new T.BufferAttribute(opacity,1));geometry.setAttribute('uv',new T.BufferAttribute(uv,2));
  const material=new T.ShaderMaterial({transparent:true,depthWrite:false,side:T.DoubleSide,uniforms:{tint:{value:new T.Color(SNOW_TRACK_STYLE.tint)}},vertexShader:`attribute float opacity;attribute float shape;varying float a;varying float hoof;varying vec2 vUv;void main(){a=opacity;hoof=shape;vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,fragmentShader:`uniform vec3 tint;varying float a;varying float hoof;varying vec2 vUv;void main(){float edge=smoothstep(0.,.25,vUv.x)*smoothstep(0.,.25,1.-vUv.x);if(hoof>.5){vec2 q=(vUv-.5)*2.;float split=smoothstep(0.,.12,abs(q.x));edge=(1.-smoothstep(.55,1.,length(q)))*split;}gl_FragColor=vec4(tint,a*edge);}`});
  const mesh=new T.Mesh(geometry,material);mesh.name='Faint tyre and deer hoof tracks';mesh.frustumCulled=false;scene.add(mesh);
- const previous=[null,null],point=new T.Vector3();let cursor=0;
- return {reset(){ages.fill(99);opacity.fill(0);previous.fill(null);deerState.clear();cursor=0;hoofCursor=160;geometry.attributes.opacity.needsUpdate=true;},update(dt,delta,car,active,deer=[]){
+ const previous=[null,null,null,null],point=new T.Vector3(),across=new T.Vector3(),wheelRotation=new T.Quaternion();let cursor=0;
+ return {reset(){ages.fill(99);opacity.fill(0);previous.fill(null);deerState.clear();cursor=0;hoofCursor=tyreSlots;geometry.attributes.opacity.needsUpdate=true;},update(dt,delta,car,active,deer=[]){
   for(let i=0;i<count;i++){ages[i]+=dt;for(let v=0;v<6;v++){positions[i*18+v*3+2]+=delta;opacity[i*6+v]=Math.max(0,1-ages[i]/lifetimes[i])*SNOW_TRACK_STYLE.opacity;}}
-  for(const p of previous)if(p)p.z+=delta;
-  if(active&&delta>0){car.updateMatrixWorld(true);for(let side=0;side<2;side++){
-   point.set((side?1:-1)*.886,.014,1.4);car.localToWorld(point);point.y=.014;
-   const old=previous[side];if(old&&old.distanceTo(point)<3){
-    const i=cursor++%160;ages[i]=0;const wx=Math.cos(car.rotation.y)*.143,wz=-Math.sin(car.rotation.y)*.143;
-    const corners=[[old.x-wx,old.z-wz],[old.x+wx,old.z+wz],[point.x-wx,point.z-wz],[point.x+wx,point.z+wz]],order=[0,1,2,2,1,3];
+  for(const p of previous)if(p)p.point.z+=delta;
+  if(active&&delta>0){car.updateMatrixWorld(true);for(let wheelIndex=0;wheelIndex<car.userData.wheels.length;wheelIndex++){
+   const pivot=car.userData.wheels[wheelIndex].steeringPivot;
+   // Each tyre leaves its own world-space path, including front steering angle.
+   pivot.getWorldPosition(point);point.y=.014;
+   pivot.getWorldQuaternion(wheelRotation);
+   across.set(1,0,0).applyQuaternion(wheelRotation);across.y=0;across.normalize().multiplyScalar(.143*.9);
+   const old=previous[wheelIndex];if(old&&old.point.distanceTo(point)<3){
+    const i=cursor++%tyreSlots;ages[i]=0;
+    const corners=[[old.point.x-old.across.x,old.point.z-old.across.z],[old.point.x+old.across.x,old.point.z+old.across.z],[point.x-across.x,point.z-across.z],[point.x+across.x,point.z+across.z]],order=[0,1,2,2,1,3];
     for(let v=0;v<6;v++){const c=order[v];positions.set([corners[c][0],.014,corners[c][1]],i*18+v*3);uv.set([c%2,c<2?0:1],i*12+v*2);opacity[i*6+v]=SNOW_TRACK_STYLE.opacity;}
-   }previous[side]=point.clone();
+   }previous[wheelIndex]={point:point.clone(),across:across.clone()};
   }}else previous.fill(null);
   if(active){for(const d of deer){
    if(Math.abs(d.position.z)>140){deerState.delete(d);continue;}
@@ -101,7 +105,7 @@ function createTyreTracks(scene){
    for(const legIndex of (state.step++%2?[1,2]:[0,3])){
     const leg=d.userData.legs?.[legIndex];if(!leg)continue;
     point.set(.04,-1.09,0);leg.localToWorld(point);
-    const i=hoofCursor++;if(hoofCursor>=count)hoofCursor=160;ages[i]=0;lifetimes[i]=8;
+    const i=hoofCursor++;if(hoofCursor>=count)hoofCursor=tyreSlots;ages[i]=0;lifetimes[i]=8;
     const cos=Math.cos(d.rotation.y),sin=Math.sin(d.rotation.y),order=[0,1,2,2,1,3];
     for(let v=0;v<6;v++){const c=order[v],x=(c<2?-.09:.09),z=(c%2?1:-1)*.055;
      positions.set([point.x+x*cos+z*sin,.014,point.z-x*sin+z*cos],i*18+v*3);
