@@ -67,8 +67,9 @@ export function createVapor(scene){
  }};
 }
 
-// One setting controls the faintness and colour of both tyre and hoof prints.
-export const SNOW_TRACK_STYLE={opacity:.05,tint:"#85918f"};
+// Shared base visibility and colour, with per-type visibility multipliers.
+const trackOpacity=hoof=>SNOW_TRACK_STYLE.opacity*(hoof?SNOW_TRACK_STYLE.hoofMultiplier:SNOW_TRACK_STYLE.tyreMultiplier);
+export const SNOW_TRACK_STYLE={opacity:.05,tyreMultiplier:.9,hoofMultiplier:1.2,tint:"#85918f"};
 // Faint compressed snow stays on the scrolling road.
 function createTyreTracks(scene){
  const tyreSlots=320,count=tyreSlots+160,positions=new Float32Array(count*18),opacity=new Float32Array(count*6),uv=new Float32Array(count*12),ages=new Float32Array(count).fill(99);
@@ -80,7 +81,7 @@ function createTyreTracks(scene){
  const mesh=new T.Mesh(geometry,material);mesh.name='Faint tyre and deer hoof tracks';mesh.frustumCulled=false;scene.add(mesh);
  const previous=[null,null,null,null],point=new T.Vector3(),across=new T.Vector3(),wheelRotation=new T.Quaternion();let cursor=0;
  return {reset(){ages.fill(99);opacity.fill(0);previous.fill(null);deerState.clear();cursor=0;hoofCursor=tyreSlots;geometry.attributes.opacity.needsUpdate=true;},update(dt,delta,car,active,deer=[]){
-  for(let i=0;i<count;i++){ages[i]+=dt;for(let v=0;v<6;v++){positions[i*18+v*3+2]+=delta;opacity[i*6+v]=Math.max(0,1-ages[i]/lifetimes[i])*SNOW_TRACK_STYLE.opacity;}}
+  for(let i=0;i<count;i++){ages[i]+=dt;for(let v=0;v<6;v++){positions[i*18+v*3+2]+=delta;opacity[i*6+v]=Math.max(0,1-ages[i]/lifetimes[i])*trackOpacity(shapes[i*6]>.5);}}
   for(const p of previous)if(p)p.point.z+=delta;
   if(active&&delta>0){car.updateMatrixWorld(true);for(let wheelIndex=0;wheelIndex<car.userData.wheels.length;wheelIndex++){
    const pivot=car.userData.wheels[wheelIndex].steeringPivot;
@@ -91,7 +92,7 @@ function createTyreTracks(scene){
    const old=previous[wheelIndex];if(old&&old.point.distanceTo(point)<3){
     const i=cursor++%tyreSlots;ages[i]=0;
     const corners=[[old.point.x-old.across.x,old.point.z-old.across.z],[old.point.x+old.across.x,old.point.z+old.across.z],[point.x-across.x,point.z-across.z],[point.x+across.x,point.z+across.z]],order=[0,1,2,2,1,3];
-    for(let v=0;v<6;v++){const c=order[v];positions.set([corners[c][0],.014,corners[c][1]],i*18+v*3);uv.set([c%2,c<2?0:1],i*12+v*2);opacity[i*6+v]=SNOW_TRACK_STYLE.opacity;}
+    for(let v=0;v<6;v++){const c=order[v];positions.set([corners[c][0],.014,corners[c][1]],i*18+v*3);uv.set([c%2,c<2?0:1],i*12+v*2);opacity[i*6+v]=trackOpacity(false);}
    }previous[wheelIndex]={point:point.clone(),across:across.clone()};
   }}else previous.fill(null);
   if(active){for(const d of deer){
@@ -109,7 +110,7 @@ function createTyreTracks(scene){
     const cos=Math.cos(d.rotation.y),sin=Math.sin(d.rotation.y),order=[0,1,2,2,1,3];
     for(let v=0;v<6;v++){const c=order[v],x=(c<2?-.09:.09),z=(c%2?1:-1)*.055;
      positions.set([point.x+x*cos+z*sin,.014,point.z-x*sin+z*cos],i*18+v*3);
-     uv.set([c%2,c<2?0:1],i*12+v*2);shapes[i*6+v]=1;opacity[i*6+v]=SNOW_TRACK_STYLE.opacity;
+     uv.set([c%2,c<2?0:1],i*12+v*2);shapes[i*6+v]=1;opacity[i*6+v]=trackOpacity(true);
     }
    }
   }}else deerState.clear();
