@@ -12,12 +12,12 @@ export function createDroneScore(ctx, random = Math.random) {
 
   // Dark, uneven echoes; feedback stays well below unity.
   const echoBus = ctx.createGain();
-  for (const [seconds, panValue] of [[.86, -.28], [1.29, .28]]) {
+  for (const [seconds, panValue] of [[.86, -.82], [1.29, .82]]) {
     const delay = ctx.createDelay(2); delay.delayTime.value = seconds;
     const damp = ctx.createBiquadFilter();
     damp.type = 'lowpass'; damp.frequency.value = 610; damp.Q.value = .4;
-    const feedback = ctx.createGain(); feedback.gain.value = .55;
-    const wet = ctx.createGain(); wet.gain.value = .48;
+    const feedback = ctx.createGain(); feedback.gain.value = .60;
+    const wet = ctx.createGain(); wet.gain.value = .54;
     const pan = ctx.createStereoPanner(); pan.pan.value = panValue;
     lowCut.connect(delay); delay.connect(damp);
     damp.connect(feedback).connect(delay);
@@ -25,7 +25,7 @@ export function createDroneScore(ctx, random = Math.random) {
   }
   echoBus.connect(mix);
   const reverb = ctx.createConvolver();
-  const length = Math.floor(ctx.sampleRate * 5.6);
+  const length = Math.floor(ctx.sampleRate * 7.5);
   const impulse = ctx.createBuffer(2, length, ctx.sampleRate);
   for (let channel = 0; channel < 2; channel++) {
     const data = impulse.getChannelData(channel);
@@ -34,11 +34,11 @@ export function createDroneScore(ctx, random = Math.random) {
       smooth = smooth * .84 + (random() * 2 - 1) * .16;
       const seconds = i / ctx.sampleRate;
       const fadeIn = Math.min(1, Math.max(0, (seconds - .025) / .06));
-      data[i] = smooth * fadeIn * Math.exp(-seconds * 1.12) * (1 - i / length);
+      data[i] = smooth * fadeIn * Math.exp(-seconds * .72) * (1 - i / length);
     }
   }
   reverb.buffer = impulse;
-  const room = ctx.createGain(); room.gain.value = .32;
+  const room = ctx.createGain(); room.gain.value = .68;
   lowCut.connect(reverb); echoBus.connect(reverb);
   reverb.connect(room).connect(mix);
   const limiter = ctx.createDynamicsCompressor();
@@ -55,8 +55,8 @@ export function createDroneScore(ctx, random = Math.random) {
     osc.connect(gain).connect(destination);
     return {osc, gain};
   }
-  // No continuous bed: each phrase ends before the next begins.
-  let nextNote = 0, previous = 2, active = false;
+  // Occasional overlapping pairs alternate with pauses; no continuous bed.
+  let nextNote = 0, previous = 2, active = false, paired = false;
   function phrase(start) {
     // Prefer neighbouring chord tones, with occasional octave movement.
     const steps = [-2, -1, 1, 1, 2];
@@ -65,10 +65,10 @@ export function createDroneScore(ctx, random = Math.random) {
     previous = index;
     const frequency = root * notes[index];
     const envelope = ctx.createGain();
-    const pan = ctx.createStereoPanner(); pan.pan.value = (random() - .5) * .22;
+    const pan = ctx.createStereoPanner(); pan.pan.value = (random() - .5) * .6;
     envelope.connect(pan).connect(input);
-    const attack = .55 + random() * .45, duration = 3.8 + random() * 1.8;
-    const level = .085 + random() * .025;
+    const attack = 1.4 + random() * .8, duration = 5.5 + random() * 2;
+    const level = .072 + random() * .018;
     envelope.gain.setValueAtTime(0, start);
     envelope.gain.linearRampToValueAtTime(level, start + attack);
     envelope.gain.linearRampToValueAtTime(level * .16, start + duration * .6);
@@ -84,7 +84,8 @@ export function createDroneScore(ctx, random = Math.random) {
         if (--remaining === 0) { envelope.disconnect(); pan.disconnect(); }
       };
     }
-    return duration + 8 + random() * 4;
+    const overlap=!paired&&random()<.48;paired=overlap;
+    return overlap?duration*.58:duration+7+random()*4;
   }
   return {
     update(enabled) {

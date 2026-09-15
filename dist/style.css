@@ -4,3 +4,6 @@
 
 /* iOS: long presses belong to the game, not text selection or link previews. */
 html,body,body *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}button{-webkit-appearance:none;appearance:none}::selection{background:transparent}
+
+/* Centred film-title composition at every aspect ratio. */
+main{left:50%;right:auto;transform:translateX(-50%);width:calc(100% - 40px);max-width:850px;text-align:center;top:17%}.instructions{margin-left:auto;margin-right:auto;text-align:center}#bottom{justify-content:center;text-align:center}.primary{display:inline-flex;justify-content:center;align-items:center;gap:12px;text-align:center}.primary span{float:none;margin-left:0}#start{justify-content:center}#over{text-align:center}@media(max-height:520px){main{top:15%}h1{font-size:48px}}

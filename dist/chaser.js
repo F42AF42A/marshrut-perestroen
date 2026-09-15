@@ -4,7 +4,7 @@ export function createChaser(){
  const car=new T.Group();car.name='White Chaser';
  const material=(color,roughness=.45,metalness=.1)=>new T.MeshStandardMaterial({color,roughness,metalness});
  const white=new T.MeshPhysicalMaterial({color:'#f1f0e8',roughness:.29,metalness:.12,clearcoat:.65,clearcoatRoughness:.2});
- const glass=material('#10212c',.16,.4),rubber=material('#14191e',.95),black=material('#20272b',.7),seam=material('#72838a',.8),silver=material('#c3ced3',.23,.8),lens=material('#a7b9c2',.19,.35);
+ const glass=material('#87979f',.21,.55),rubber=material('#14191e',.95),black=material('#20272b',.7),seam=material('#72838a',.8),silver=material('#c3ced3',.23,.8),lens=material('#a7b9c2',.19,.35);
  const red=new T.MeshStandardMaterial({color:'#721219',emissive:'#b31d1b',emissiveIntensity:.45,roughness:.24});
  const redLamp=new T.MeshStandardMaterial({color:'#be2928',emissive:'#e53422',emissiveIntensity:.6,roughness:.25});
  const amber=material('#bd8444',.25),headlight=new T.MeshStandardMaterial({color:'#e6eef0',emissive:'#c5deed',emissiveIntensity:.25,roughness:.17,metalness:.25});
