@@ -1,5 +1,6 @@
 import * as T from './three.module.js';
 import { createDroneScore } from './drone.js';
+import { createChaser } from './chaser.js';
 const $=id=>document.getElementById(id),canvas=$('world');
 let renderer;
 try{renderer=new T.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});}catch(e){$('error').hidden=false;throw e;}
@@ -13,15 +14,7 @@ function mesh(g,m,parent,x=0,y=0,z=0){const o=new T.Mesh(g,m);o.position.set(x,y
 function box(w,h,d,m,p,x,y,z){return mesh(new T.BoxGeometry(w,h,d),m,p,x,y,z)}
 function ell(w,h,d,m,p,x,y,z){const o=mesh(new T.SphereGeometry(1,18,12),m,p,x,y,z);o.scale.set(w,h,d);return o;}
 function link(a,b,r,m,p,r2=r){let v=new T.Vector3(...a),u=new T.Vector3(...b),o=mesh(new T.CylinderGeometry(r2,r,v.distanceTo(u),7),m,p);o.position.copy(v.clone().add(u).multiplyScalar(.5));o.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),u.sub(v).normalize());return o;}
-// A shaped sedan shell: separate bonnet, cabin glass, pillars, trunk and trim.
-const car=new T.Group();scene.add(car);
-function hull(rings,m){const pos=[],idx=[];for(const [z,w,lo,hi] of rings)pos.push(-w,lo,z,w,lo,z,w,hi,z,-w,hi,z);for(let j=0;j<rings.length-1;j++)for(let k=0;k<4;k++){let a=j*4+k,b=j*4+(k+1)%4,c=b+4,d=a+4;idx.push(a,b,d,b,c,d)}idx.push(0,2,1,0,3,2);let n=(rings.length-1)*4;idx.push(n,n+1,n+2,n,n+2,n+3);const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setIndex(idx);g.computeVertexNormals();return mesh(g,m,car);}
-hull([[-2.3,.75,.46,.82],[-1.95,.89,.4,1.02],[-.95,.91,.42,1.09],[1.4,.9,.42,1.08],[2.25,.82,.5,.93]],paint);
-hull([[-1.05,.8,1.02,1.06],[-.38,.7,1.06,1.67],[.77,.7,1.06,1.67],[1.46,.79,1.02,1.08]],glass);
-box(1.41,.075,1.18,paint,car,0,1.68,.2);box(.77,.016,.46,glass,car,0,1.722,.1);
-for(const s of [-1,1]){link([s*.8,1.06,-1.06],[s*.7,1.67,-.38],.035,paint,car);link([s*.7,1.67,.77],[s*.79,1.06,1.46],.058,paint,car);link([s*.73,1.07,.25],[s*.7,1.67,.25],.035,paint,car);box(.018,.045,2.7,chrome,car,s*.913,.91,.1);box(.035,.045,.25,chrome,car,s*.92,1.03,.55);box(.035,.045,.25,chrome,car,s*.92,1.03,-.56);ell(.15,.095,.18,paint,car,s*.98,1.15,-.72);for(const z of [-1.46,1.45]){const tire=mesh(new T.CylinderGeometry(.36,.36,.21,28),rubber,car,s*.86,.39,z);tire.rotation.z=Math.PI/2;const rim=mesh(new T.CylinderGeometry(.23,.23,.218,20),chrome,car,s*.88,.39,z);rim.rotation.z=Math.PI/2;const hub=mesh(new T.CylinderGeometry(.09,.09,.222,14),dark,car,s*.9,.39,z);hub.rotation.z=Math.PI/2;}
-box(.51,.18,.065,red,car,s*.54,.87,2.25);box(.54,.17,.06,mat('#e4e8d6',.18),car,s*.5,.83,-2.28);}
-box(1.57,.15,.17,paint,car,0,.49,2.19);box(1.47,.065,.045,dark,car,0,.59,2.29);box(.38,.14,.025,mat('#e0e1d8'),car,0,.84,2.29);box(.55,.19,.035,dark,car,0,.71,-2.32);box(.15,.05,.24,chrome,car,-.54,.39,2.29);
+const car=createChaser();scene.add(car);
 const shadowCanvas=document.createElement('canvas');shadowCanvas.width=128;shadowCanvas.height=128;let sx=shadowCanvas.getContext('2d'),sg=sx.createRadialGradient(64,64,0,64,64,64);sg.addColorStop(0,'rgba(17,34,47,.65)');sg.addColorStop(1,'rgba(17,34,47,0)');sx.fillStyle=sg;sx.fillRect(0,0,128,128);const shadowTex=new T.CanvasTexture(shadowCanvas);const shadow=mesh(new T.PlaneGeometry(4,7),new T.MeshBasicMaterial({map:shadowTex,transparent:true,depthWrite:false}),car,0,.045,.3);shadow.rotation.x=-Math.PI/2;shadow.castShadow=false;
 const groundMaterial=new T.MeshStandardMaterial({color:'#becfd6',roughness:.86});
 groundMaterial.onBeforeCompile=s=>{s.uniforms.travel={value:0};groundMaterial.userData.shader=s;s.vertexShader=s.vertexShader.replace('#include <common>','#include <common>\nattribute vec2 surface; varying vec2 vSurface;').replace('#include <begin_vertex>','#include <begin_vertex>\nvSurface=surface;');s.fragmentShader=s.fragmentShader.replace('#include <common>',`#include <common>
